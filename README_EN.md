@@ -5,84 +5,51 @@
 A high-performance WebGL particle experiment project based on **Vue 3** and **Three.js**.
 This project converts ordinary RGB images into tens of thousands of 3D particles, and supports **Depth Map** based reconstruction to generate 2.5D / 3D relief-like models, simulating point cloud scanning effects.
 
-<div style="
-    width: 600px;
-    height: 400px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 8px;
-    background: #a29d9d40;
-    text-align: center
-    padding: 8px;
-    border-radius: 12px;">
-    <div style="overflow: hidden; border-radius: 8px;">
-        <img src="public/image.png" style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        ">
-    </div>
-    <div style="overflow: hidden; border-radius: 8px;">
-        <img src="public/depth_colored.webp" style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        ">
-    </div>
-    <div style="overflow: hidden; border-radius: 8px;">
-        <img src="public/depth.png" style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        ">
-    </div>
-    <div style="overflow: hidden; border-radius: 8px;">
-        <img src="public/demo.gif" style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        ">
-    </div>
-</div>
+<table>
+  <tr>
+    <td>
+      <img src="public/image.png" width="100%">
+    </td>
+    <td>
+      <img src="public/depth_colored.png" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="public/depth.png" width="100%">
+    </td>
+    <td>
+      <img src="public/demo.gif" width="100%">
+    </td>
+  </tr>
+</table>
 
----
 
-<div style="
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 12px 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-">  
-    <a style="
-        font-size: 18px;
-        font-weight: 600;
-        color: #58373e;
-        text-decoration: none;
-    ">
-    Image Author: 
-    </a>
-    <img src="./public/nemupan.jpg" style="
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        object-fit: cover;
-        box-shadow: 0 0 0 1px #ddd;
-    ">
-    <a href="https://www.nemupan.com" target="_blank" style="
-        font-size: 18px;
-        font-weight: 600;
-        color: #f2a3b3;
-        text-decoration: none;
-    ">
+----
+
+<table>
+  <tr>
+    <td style="vertical-align: middle;"
+      <a><img src="./public/nemupan.jpg" width="36"></a>
+    </td>
+    <td style="vertical-align: middle;">
+      <b>Image Author: </b>
+      <a href="https://www.nemupan.com" target="_blank" style="color:#f2a3b3">
         nemupan
-    </a>
-</div>
+      </a>
+    </td>
+    <td style="vertical-align: middle;"
+      <a><img src="https://avatars.githubusercontent.com/u/140301008?v=4" width="36"></a>
+    </td>
+    <td style="vertical-align: middle;">
+      <b>Depth Estimation Model: </b>
+      <a href="https://github.com/Haruko386/ApDepth" target="_blank" style="color:#f2a3b3">
+        ApDepth
+      </a>
+    </td>
+    </tr>
+</table>
+
 
 ## ✨ Core Features
 
@@ -117,8 +84,8 @@ This project converts ordinary RGB images into tens of thousands of 3D particles
 ### 2. Install Dependencies
 
 ```bash
-git clone <your-repo-url>
-cd pixel-particles
+git clone https://github.com/Haruko386-UnOffical/3D_Pixel_Particle_Reconstruction.git
+cd 3D_Pixel_Particle_Reconstruction
 npm install
 ```
 

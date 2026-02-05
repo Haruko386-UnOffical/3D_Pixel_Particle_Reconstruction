@@ -4,85 +4,50 @@
 
 一个基于 **Vue 3** 和 **Three.js** 的高性能 WebGL 粒子特效实验项目。该项目能够将普通的 RGB 图像转化为数万个 3D 粒子，并支持通过 **深度图 (Depth Map)** 重构 2.5D/3D 浮雕模型，以此模拟点云扫描效果。
 
-<div style="
-    width: 600px;
-    height: 400px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 1fr 1fr;
-    gap: 8px;
-    background: #a29d9d40;
-    text-align: center
-    padding: 8px;
-    border-radius: 12px;">
-    <div style="overflow: hidden; border-radius: 8px;">
-        <img src="public/image.png" style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        ">
-    </div>
-    <div style="overflow: hidden; border-radius: 8px;">
-        <img src="public/depth_colored.webp" style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        ">
-    </div>
-    <div style="overflow: hidden; border-radius: 8px;">
-        <img src="public/depth.png" style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        ">
-    </div>
-    <div style="overflow: hidden; border-radius: 8px;">
-        <img src="public/demo.gif" style="
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        ">
-    </div>
-</div>
+<table>
+  <tr>
+    <td>
+      <img src="public/image.png" width="100%">
+    </td>
+    <td>
+      <img src="public/depth_colored.png" width="100%">
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <img src="public/depth.png" width="100%">
+    </td>
+    <td>
+      <img src="public/demo.gif" width="100%">
+    </td>
+  </tr>
+</table>
+
 
 ----
 
-<div style="
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin: 12px 0;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-">  
-    <a style="
-        font-size: 18px;
-        font-weight: 600;
-        color: #58373e;
-        text-decoration: none;
-    ">
-    示例图作者: 
-    </a>
-    <img src="./public/nemupan.jpg" style="
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        object-fit: cover;
-        box-shadow: 0 0 0 1px #ddd;
-    ">
-    <a href="https://www.nemupan.com" target="_blank" style="
-        font-size: 18px;
-        font-weight: 600;
-        color: #f2a3b3;
-        text-decoration: none;
-    ">
+<table>
+  <tr>
+    <td style="vertical-align: middle;"
+      <a><img src="./public/nemupan.jpg" width="36"></a>
+    </td>
+    <td style="vertical-align: middle;">
+      <b>示例图作者：</b>
+      <a href="https://www.nemupan.com" target="_blank" style="color:#f2a3b3">
         nemupan
-    </a>
-</div>
-
+      </a>
+    </td>
+    <td style="vertical-align: middle;"
+      <a><img src="https://avatars.githubusercontent.com/u/140301008?v=4" width="36"></a>
+    </td>
+    <td style="vertical-align: middle;">
+      <b>深度估计模型：</b>
+      <a href="https://github.com/Haruko386/ApDepth" target="_blank" style="color:#f2a3b3">
+        ApDepth
+      </a>
+    </td>
+    </tr>
+</table>
 
 ## ✨ 核心特点
 
@@ -99,7 +64,7 @@
 * **Shader Language**: GLSL (Vertex & Fragment Shaders)
 * **Utils**: gifuct-js (GIF parsing)
 
-## 🚀 快速开始
+## 🚀 环境配置
 
 ### 1. 环境要求
 
@@ -109,8 +74,8 @@
 ### 2. 安装依赖
 
 ```bash
-git clone 
-cd pixel-particles
+git clone https://github.com/Haruko386-UnOffical/3D_Pixel_Particle_Reconstruction.git
+cd 3D_Pixel_Particle_Reconstruction
 npm install
 ```
 
