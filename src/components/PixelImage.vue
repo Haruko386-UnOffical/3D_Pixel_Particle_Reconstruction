@@ -12,10 +12,6 @@
             </div>
 
             <div class="divider"></div>
-<!-- 
-            <PresetSelector @select="handlePresetSelect" />
-
-            <div class="divider"></div> -->
 
             <div class="controls-group">
                 <div class="control-item">
@@ -38,19 +34,17 @@
                         <span class="icon">layers</span>
                         <span>{{ hasDepth ? 'REPLACE DEPTH' : 'UPLOAD DEPTH' }}</span>
                     </label>
-                    <div v-if="hasDepth" class="clear-btn" @click.stop="clearDepth">
-                        <span class="icon small">close</span>
+
+                    <div v-if="hasDepth" class="depth-tools">
+                        <div class="tool-btn" @click.stop="toggleDepthInvert" :class="{ active: invertDepth }"
+                            title="Invert Depth">
+                            <span class="icon small">flip_camera_android</span>
+                            <span class="tool-text">REV</span>
+                        </div>
+                        <div class="tool-btn remove" @click.stop="clearDepth" title="Remove Depth">
+                            <span class="icon small">close</span>
+                        </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="divider"></div>
-
-            <div class="controls-group">
-                <label class="label-text">EFFECTS</label>
-                <div class="action-btn" :class="{ 'active': isExploded }" @click="toggleExplosion">
-                    <span class="icon">{{ isExploded ? 'blur_off' : 'blur_on' }}</span>
-                    <span>{{ isExploded ? 'ASSEMBLE PARTICLES' : 'EXPLODE PARTICLES' }}</span>
                 </div>
             </div>
 
@@ -64,76 +58,42 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import { loadGifFrames } from '../utils/gifLoader';
-import PresetSelector from './PresetSelector.vue';
-import defaultImg from '@/assets/example.png';
+import defaultImg from '@/assets/example_01.jpg';
+import defaultDepthImg from '@/assets/example_01_depth.png';
 
 const vertexShader = `
-  uniform float uTime;
   uniform vec2 uTextureSize;
-  uniform float uThick; // 爆炸/离散程度
   uniform sampler2D uDepthTexture;
   uniform float uHasDepth;
   uniform float uDepthScale;
-  
-  attribute vec2 offset;
-  varying vec2 vuv;
-  varying float vDepth;
+  uniform float uInvertDepth;
+  uniform float uPointSize;
 
-  vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
-  float snoise(vec2 v){
-    const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
-    vec2 i  = floor(v + dot(v, C.yy) );
-    vec2 x0 = v -   i + dot(i, C.xx);
-    vec2 i1;
-    i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-    vec4 x12 = x0.xyxy + C.xxzz;
-    x12.xy -= i1;
-    i = mod(i, 289.0);
-    vec3 p = permute( permute( i.y + vec3(0.0, i1.y, 1.0 )) + i.x + vec3(0.0, i1.x, 1.0 ));
-    vec3 m = max(0.5 - vec3(dot(x0,x0), dot(x12.xy,x12.xy), dot(x12.zw,x12.zw)), 0.0);
-    m = m*m ; m = m*m ;
-    vec3 x = 2.0 * fract(p * C.www) - 1.0;
-    vec3 h = abs(x) - 0.5;
-    vec3 ox = floor(x + 0.5);
-    vec3 a0 = x - ox;
-    m *= 1.79284291400159 - 0.85373472095314 * ( a0*a0 + h*h );
-    vec3 g;
-    g.x  = a0.x  * x0.x  + h.x  * x0.y;
-    g.yz = a0.yz * x12.xz + h.yz * x12.yw;
-    return 130.0 * dot(m, g);
-  }
+  varying vec2 vuv;
 
   void main() {
-    float width = uTextureSize.x;
-    float height = uTextureSize.y;
-    vec2 cellSize = vec2(1.0 / width, 1.0 / height);
-    vuv = (uv + vec2(offset.x, height - offset.y)) * cellSize;
-
-    float x = offset.x - width * 0.5;
-    float y = height * 0.5 - offset.y;
+    vuv = uv;
+    vec3 currentPos = position;
     float z = 0.0;
 
     if (uHasDepth > 0.5) {
+        // 3D 模式：采样深度图
         float depthVal = texture2D(uDepthTexture, vuv).r;
-        vDepth = depthVal;
-        z = (1.0 - depthVal) * uDepthScale - (uDepthScale * 0.5);
-        float noise = snoise(offset + abs(sin(uTime * 0.0001)) * 0.5);
-        z += noise * uThick * 10.0;
-    } else {
-        // 2D 模式
-        vDepth = 0.0;
-        vec2 dist1 = offset - vec2(width * 0.25, height * 0.25);
-        vec2 dist2 = offset - vec2(width * 0.25, height * 0.75);
-        vec2 dist3 = offset - vec2(width * 0.75, height * 0.25);
-        vec2 dist4 = offset - vec2(width * 0.75, height * 0.75);
-        vec2 dist = dist1 + dist2 + dist3 + dist4;
         
-        float noise = snoise(offset + abs(sin(uTime * 0.0001)) * 0.5);
-        z = noise * uThick * dot(dist, dist) * 0.00003;
-    }
+        float finalDepth = 0.0;
+        if (uInvertDepth > 0.5) {
+            finalDepth = depthVal; 
+        } else {
+            finalDepth = 1.0 - depthVal;
+        }
 
-    vec3 newPosition = vec3(x, y, z);
-    gl_Position = projectionMatrix * modelViewMatrix * vec4(newPosition + vec3(position.xy, 0.0), 1.0);
+        z = finalDepth * uDepthScale - (uDepthScale * 0.5);
+    } 
+
+    vec3 newPosition = vec3(currentPos.x, currentPos.y, z);
+    vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
+    gl_Position = projectionMatrix * mvPosition;
+    gl_PointSize = uPointSize * (800.0 / -mvPosition.z);
   }
 `;
 
@@ -141,7 +101,7 @@ const fragmentShader = `
   precision highp float;
   uniform sampler2D uTexture;
   varying vec2 vuv;
-  varying float vDepth;
+  
   void main() {
     vec4 color = texture2D(uTexture, vuv);
     if (color.a < 0.1) discard;
@@ -149,26 +109,25 @@ const fragmentShader = `
   }
 `;
 
-// Vue Logic 
 const canvasRef = ref(null);
 const loading = ref(false);
 const hasDepth = ref(false);
-const isExploded = ref(false);
+const invertDepth = ref(false);
 const currentDepthTex = ref(null);
 
 let renderer, scene, camera, controls, particlesMesh, animationId;
 let gifState = { isGif: false, frames: [], currentFrameIndex: 0, lastFrameTime: 0, ctx: null, texture: null };
 
-// 状态参数
 const state = {
-    thick: 0,
-    targetThick: 0,
     depthScale: 300,
+    pointSize: 1.5
 };
 
-const toggleExplosion = () => {
-    isExploded.value = !isExploded.value;
-    state.targetThick = isExploded.value ? 30 : 0;
+const toggleDepthInvert = () => {
+    invertDepth.value = !invertDepth.value;
+    if (particlesMesh) {
+        particlesMesh.material.uniforms.uInvertDepth.value = invertDepth.value ? 1.0 : 0.0;
+    }
 };
 
 const initScene = () => {
@@ -197,38 +156,43 @@ const createParticles = (width, height, texture) => {
         particlesMesh.material.dispose();
     }
 
-    const geometry = new THREE.InstancedBufferGeometry();
-    const positions = new Float32Array([-0.5, 0.5, 0.0, 0.5, 0.5, 0.0, -0.5, -0.5, 0.0, 0.5, -0.5, 0.0]);
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const uvs = new Float32Array([0.0, 1.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0]);
-    geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-    geometry.setIndex(new THREE.BufferAttribute(new Uint16Array([0, 2, 1, 2, 3, 1]), 1));
+    const geometry = new THREE.BufferGeometry();
+    const positions = [];
+    const uvs = [];
 
-    const totalParticles = width * height;
-    const offsets = new Float32Array(totalParticles * 2);
-    for (let i = 0; i < totalParticles; i++) {
-        offsets[i * 2 + 0] = i % width;
-        offsets[i * 2 + 1] = Math.floor(i / width);
+    const numParticles = width * height;
+    const halfWidth = width / 2;
+    const halfHeight = height / 2;
+
+    for (let i = 0; i < numParticles; i++) {
+        const x = (i % width);
+        const y = Math.floor(i / width);
+
+        positions.push(x - halfWidth, halfHeight - y, 0);
+        uvs.push(x / width, 1.0 - y / height);
     }
-    geometry.setAttribute('offset', new THREE.InstancedBufferAttribute(offsets, 2));
+
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
 
     const material = new THREE.ShaderMaterial({
         uniforms: {
             uTexture: { value: texture },
-            uTextureSize: { value: new THREE.Vector2(width, height) },
-            uTime: { value: 0 },
-            uThick: { value: state.thick },
             uDepthTexture: { value: currentDepthTex.value || new THREE.Texture() },
             uHasDepth: { value: hasDepth.value ? 1.0 : 0.0 },
-            uDepthScale: { value: state.depthScale }
+            uDepthScale: { value: state.depthScale },
+            uInvertDepth: { value: invertDepth.value ? 1.0 : 0.0 },
+            uPointSize: { value: state.pointSize * window.devicePixelRatio }
         },
         vertexShader,
         fragmentShader,
         side: THREE.DoubleSide,
-        transparent: true
+        transparent: false,
+        depthTest: true,
+        depthWrite: true 
     });
 
-    particlesMesh = new THREE.Mesh(geometry, material);
+    particlesMesh = new THREE.Points(geometry, material);
     scene.add(particlesMesh);
 
     const maxDim = Math.max(width, height);
@@ -244,19 +208,21 @@ const createParticles = (width, height, texture) => {
     controls.update();
 };
 
-const processImage = (src, isGif = false, file = null) => {
+const processImage = (src, isGif = false, file = null, initialDepth = null) => {
     loading.value = true;
-    // 每次加载新图时，重置状态
-    isExploded.value = false;
-    state.targetThick = 0;
-    state.thick = 0;
+
+    // 如果没有传入初始深度，则重置深度状态；否则保持（后续加载）
+    if (!initialDepth) {
+        hasDepth.value = false;
+        currentDepthTex.value = null;
+    }
 
     if (!isGif) {
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.src = src;
         img.onload = () => {
-            const MAX_WIDTH = 500;
+            const MAX_WIDTH = 600; // 保持性能限制
             const scale = Math.min(1, MAX_WIDTH / img.width);
             const w = Math.floor(img.width * scale);
             const h = Math.floor(img.height * scale);
@@ -273,6 +239,23 @@ const processImage = (src, isGif = false, file = null) => {
             gifState.isGif = false;
             createParticles(w, h, texture);
             loading.value = false;
+
+            if (initialDepth) {
+                const loader = new THREE.TextureLoader();
+                loader.load(initialDepth, (tex) => {
+                    tex.minFilter = THREE.NearestFilter;
+                    tex.magFilter = THREE.NearestFilter;
+                    currentDepthTex.value = tex;
+                    hasDepth.value = true;
+                    if (particlesMesh) {
+                        particlesMesh.material.uniforms.uDepthTexture.value = tex;
+                        particlesMesh.material.uniforms.uHasDepth.value = 1.0;
+                        particlesMesh.material.uniforms.uInvertDepth.value = 0.0; // 默认不反转
+                        camera.position.set(200, 100, 600); // 初始视角
+                        controls.update();
+                    }
+                });
+            }
         };
     } else {
         loadGifFrames(file).then(({ frames, width, height }) => {
@@ -291,14 +274,12 @@ const handleDepthUpload = (event) => {
             tex.magFilter = THREE.NearestFilter;
             currentDepthTex.value = tex;
             hasDepth.value = true;
-            // 切换到深度模式时，默认重置
-            isExploded.value = false;
-            state.targetThick = 0;
+            invertDepth.value = false;
 
             if (particlesMesh) {
                 particlesMesh.material.uniforms.uDepthTexture.value = tex;
                 particlesMesh.material.uniforms.uHasDepth.value = 1.0;
-                camera.position.x = 200; camera.position.y = 100;
+                particlesMesh.material.uniforms.uInvertDepth.value = 0.0;
                 controls.update();
             }
         });
@@ -309,6 +290,7 @@ const handleDepthUpload = (event) => {
 const clearDepth = () => {
     hasDepth.value = false;
     currentDepthTex.value = null;
+    invertDepth.value = false;
     if (particlesMesh) {
         particlesMesh.material.uniforms.uHasDepth.value = 0.0;
         camera.position.set(0, 0, 600);
@@ -327,19 +309,10 @@ const handleFileUpload = (event) => {
         reader.readAsDataURL(file);
     }
 };
-const handlePresetSelect = (src) => processImage(src);
 
 const animate = () => {
     animationId = requestAnimationFrame(animate);
     controls.update();
-    // 缓动更新 uThick
-    state.thick += (state.targetThick - state.thick) * 0.05;
-
-    if (particlesMesh) {
-        particlesMesh.material.uniforms.uTime.value += 1.0;
-        particlesMesh.material.uniforms.uThick.value = state.thick;
-    }
-
     renderer.render(scene, camera);
 };
 
@@ -352,7 +325,7 @@ const onResize = () => {
 onMounted(() => {
     initScene();
     window.addEventListener('resize', onResize);
-    processImage(defaultImg);
+    processImage(defaultImg, false, null, defaultDepthImg);
     animate();
 });
 
@@ -385,7 +358,6 @@ onUnmounted(() => {
     outline: none;
 }
 
-/* UI Panel */
 .ui-panel {
     position: absolute;
     bottom: 40px;
@@ -535,55 +507,51 @@ input[type="file"] {
     background: rgba(0, 255, 136, 0.05);
 }
 
-.action-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    width: 100%;
-    padding: 14px;
-    border-radius: 12px;
-    background: rgba(110, 142, 251, 0.1);
-    border: 1px solid rgba(110, 142, 251, 0.3);
-    color: #a7bfe8;
-    font-weight: 700;
-    font-size: 12px;
-    letter-spacing: 0.5px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-.action-btn:hover {
-    background: rgba(110, 142, 251, 0.2);
-    border-color: #6e8efb;
-    color: white;
-    box-shadow: 0 0 15px rgba(110, 142, 251, 0.3);
-}
-
-.action-btn.active {
-    background: #6e8efb;
-    border-color: #6e8efb;
-    color: #fff;
-    box-shadow: 0 0 20px rgba(110, 142, 251, 0.5);
-}
-
-.clear-btn {
+.depth-tools {
     position: absolute;
-    right: -10px;
+    right: 0;
     top: 28px;
-    width: 20px;
-    height: 20px;
-    background: rgba(255, 0, 0, 0.2);
-    border-radius: 50%;
+    display: flex;
+    gap: 8px;
+}
+
+.tool-btn {
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 2px;
     cursor: pointer;
     transition: all 0.2s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.clear-btn:hover {
-    background: rgba(255, 0, 0, 0.5);
+.tool-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.tool-btn.active {
+    background: #6e8efb;
+    color: white;
+    border-color: #6e8efb;
+}
+
+.tool-btn.remove {
+    background: rgba(255, 0, 0, 0.15);
+    border-color: rgba(255, 0, 0, 0.2);
+}
+
+.tool-btn.remove:hover {
+    background: rgba(255, 0, 0, 0.4);
+}
+
+.tool-text {
+    font-size: 8px;
+    font-weight: 800;
 }
 
 .icon {
@@ -592,12 +560,12 @@ input[type="file"] {
 }
 
 .icon.small {
-    font-size: 12px;
+    font-size: 14px;
 }
 
 .hint {
     font-size: 10px;
-    color: rgba(255, 255, 255, 0.3);
+    color: rgba(150, 117, 117, 0.3);
     text-align: center;
     margin-top: 5px;
     letter-spacing: 1px;
